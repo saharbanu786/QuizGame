@@ -1,30 +1,27 @@
-// Load environment variables from .env file
-require('dotenv').config();
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+require("dotenv").config();
 
-// Import necessary modules
-const express = require('express');
-const mongoose = require('mongoose');
-const quizRoutes = require('./routes/quizRoutes');
+const quizRoutes = require("./routes/quizRoutes");
+const scoreRoutes = require("./routes/scoreRoutes");
+const userRoutes = require("./routes/userRoutes");
+
 const app = express();
+app.use(express.json());
+app.use(cors());
 
-// Middleware and other configurations
-app.use(express.json()); // Parse incoming JSON requests
-app.use('/api/quiz', quizRoutes); // Use quizRoutes for handling quiz-related requests
+// MongoDB connection
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log("Connected to MongoDB"))
+  .catch((err) => console.error("MongoDB connection failed:", err));
 
-// Example of environment variable usage
-const PORT = process.env.PORT || 3000;
-const MONGO_URI = process.env.MONGO_URI;
-
-// Attempt to connect to MongoDB
-mongoose.connect(MONGO_URI)
-  .then(() => {
-    console.log('Connected to MongoDB');
-  })
-  .catch((error) => {
-    console.log('Error connecting to MongoDB:', error);
-  });
+// Routes
+app.use("/api/quiz", quizRoutes);
+app.use("/api/score", scoreRoutes);
+app.use("/api/users", userRoutes);
 
 // Start the server
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log("Server is running"));

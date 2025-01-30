@@ -1,32 +1,27 @@
 const express = require("express");
 const Quiz = require("../models/quiz");
+const { authenticateToken, authorizeAdmin } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-// Create a quiz question
-router.post("/", async (req, res) => {
-    const { question, options, correctAnswer } = req.body;
-    try {
-      // Validate the request body
-      if (!question || !options || !correctAnswer) {
-        return res.status(400).json({ message: "Missing required fields" });
-      } 
-  
-      // Create a new quiz
-      const newQuiz = new Quiz({ question, options, correctAnswer });
-      await newQuiz.save();
-  
-      // Respond with the created quiz
-      res.status(201).json({ message: "Question added successfully", quiz: newQuiz });
-    } catch (error) {
-      console.error("Error while saving quiz:", error);
-      res.status(500).json({ message: "Server error", error: error.message });
+// Create a quiz question (Admin only)
+router.post("/", authenticateToken, authorizeAdmin, async (req, res) => {
+  const { question, options, correctAnswer } = req.body;
+  try {
+    if (!question || !options || !correctAnswer) {
+      return res.status(400).json({ message: "Missing required fields" });
     }
-  });
-  
 
-// Read all quiz questions
-router.get("/", async (req, res) => {
+    const newQuiz = new Quiz({ question, options, correctAnswer });
+    await newQuiz.save();
+    res.status(201).json({ message: "Quiz added successfully", quiz: newQuiz });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
+// Read all quiz questions (Any authenticated user)
+router.get("/", authenticateToken, async (req, res) => {
   try {
     const quizzes = await Quiz.find();
     res.status(200).json(quizzes);
@@ -35,10 +30,11 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Update a quiz question
-router.put("/:id", async (req, res) => {
+// Update a quiz question (Admin only)
+router.put("/:id", authenticateToken, authorizeAdmin, async (req, res) => {
   const { id } = req.params;
   const { question, options, correctAnswer } = req.body;
+
   try {
     const updatedQuiz = await Quiz.findByIdAndUpdate(
       id,
@@ -54,9 +50,10 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// Delete a quiz question
-router.delete("/:id", async (req, res) => {
+// Delete a quiz question (Admin only)
+router.delete("/:id", authenticateToken, authorizeAdmin, async (req, res) => {
   const { id } = req.params;
+
   try {
     const deletedQuiz = await Quiz.findByIdAndDelete(id);
     if (!deletedQuiz) {
